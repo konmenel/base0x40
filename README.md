@@ -7,4 +7,4 @@ cargo test -- --show-output
 ```
 
 # Documentation
-Come on there is no need for documentation... For example usage check the test in `lib.rs`.
+Come on there is no need for documentation... For example usage check the test in `src/lib.rs`.
