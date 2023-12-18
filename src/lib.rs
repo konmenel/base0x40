@@ -1,5 +1,5 @@
 pub mod base64 {
-    pub fn encode(data: &str) -> String {
+    pub fn encode(data: &[u8]) -> String {
         const ENCODE_TABLE: [char; 64] = [
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q',
             'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h',
@@ -11,8 +11,8 @@ pub mod base64 {
         let out_len: usize = 4 * ((in_len + 2) / 3);
         let mut ret: String = String::with_capacity(out_len);
 
-        let data_nth = |n| data.chars().nth(n).unwrap() as usize;
-        let data_nth_back = |n| data.chars().nth_back(n).unwrap() as usize;
+        let data_nth = |n| *data.iter().nth(n).unwrap() as usize;
+        let data_nth_back = |n| *data.iter().nth_back(n).unwrap() as usize;
 
         for i in (0..in_len - 2).step_by(3) {
             let b1 = data_nth(i);
@@ -53,7 +53,7 @@ pub mod base64 {
         ret
     }
 
-    pub fn decode(encoded_data: &str) -> Result<String, &'static str> {
+    pub fn decode(encoded_data: &str) -> Result<Vec<u8>, &'static str> {
         const DECODE_TABLE: [usize; 128] = [
             0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64,
             0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64, 0x64,
@@ -82,7 +82,7 @@ pub mod base64 {
         if data_nth_back(1) == '=' as usize {
             out_len -= 1;
         }
-        let mut ret = String::with_capacity(out_len);
+        let mut ret = Vec::<u8>::with_capacity(out_len);
 
         for i in (0..in_len).step_by(4) {
             let c1 = DECODE_TABLE[data_nth(i)];
@@ -92,9 +92,9 @@ pub mod base64 {
 
             let concat_bytes = ((c1 << 18) | (c2 << 12) | (c3 << 6) | (c4 << 0)) as u32;
             
-            ret.push(u8::try_from((concat_bytes >> 16) & 0b1111_1111).unwrap() as char);
-            ret.push(u8::try_from((concat_bytes >> 8) & 0b1111_1111).unwrap() as char);
-            ret.push(u8::try_from((concat_bytes >> 0) & 0b1111_1111).unwrap() as char);
+            ret.push(u8::try_from((concat_bytes >> 16) & 0b1111_1111).unwrap());
+            ret.push(u8::try_from((concat_bytes >> 8) & 0b1111_1111).unwrap());
+            ret.push(u8::try_from((concat_bytes >> 0) & 0b1111_1111).unwrap());
         }
 
         ret.truncate(out_len);
@@ -119,28 +119,29 @@ mod tests {
     #[test]
     fn encode_decode() {
         let data = "I should have coded this in C++";
-        let encoded = base64::encode(data);
+        let encoded = base64::encode(data.as_bytes());
         let decoded = base64::decode(&encoded);
         assert!(decoded.is_ok());
-        let decoded = decoded.unwrap();
+        let decoded = String::from_utf8(decoded.unwrap()).expect("Decoded data are not a valid string.");
         assert!(decoded == data);
         println!("data=\"{data}\", encoded=\"{encoded}\", decoded=\"{decoded}\"");
         
-        let data = "Because I suck at Rust!";
-        let encoded = base64::encode(data);
+        let data = "Because Rust sucks";
+        let encoded = base64::encode(data.as_bytes());
         let decoded = base64::decode(&encoded);
         assert!(decoded.is_ok());
-        let decoded = decoded.unwrap();
+        let decoded = String::from_utf8(decoded.unwrap()).expect("Decoded data are not a valid string.");
         assert!(decoded == data);
         println!("data=\"{data}\", encoded=\"{encoded}\", decoded=\"{decoded}\"");
 
-        let data = "But you also suck!";
-        let encoded = base64::encode(data);
+        let data = "But you also suck";
+        let encoded = base64::encode(data.as_bytes());
         let decoded = base64::decode(&encoded);
         assert!(decoded.is_ok());
-        let decoded = decoded.unwrap();
+        let decoded = String::from_utf8(decoded.unwrap()).expect("Decoded data are not a valid string.");
         assert!(decoded == data);
         // let decoded = String::from("");
         println!("data=\"{data}\", encoded=\"{encoded}\", decoded=\"{decoded}\"");
     }
 }
+
